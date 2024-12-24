@@ -1,0 +1,11 @@
+{
+    "ALIAS": {
+        "raiden": "Raiden Shogun",
+        "shogun": "Raiden Shogun",
+        "ei": "Raiden Shogun"
+    },
+    "SETTINGS": {
+        "skipword": "DISABLED, download",
+        "ignore_numbers": "true"
+    }
+}
