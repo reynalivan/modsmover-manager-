@@ -188,8 +188,12 @@ class App:
         self.path_location_label = ttk.Label(path_location_frame, text=self.game_folder_selected_path, relief="solid", width=30)
         self.path_location_label.pack(side=tk.LEFT, padx=(10, 10), fill='x', expand=True)
 
-        self.open_folder_button = ttk.Button(path_location_frame, text="Open Folder", command=lambda: open_folder(self.game_folder_selected_path))
+        self.refresh_button = ttk.Button(path_location_frame, text="Refresh", command=lambda: refresAllList(self))
+        self.refresh_button.pack(side=tk.LEFT, padx=(10, 0))
+        
+        self.open_folder_button = ttk.Button(path_location_frame, text="Open", command=lambda: open_folder(self.game_folder_selected_path))
         self.open_folder_button.pack(side=tk.LEFT, padx=(10, 0))
+
 
     def create_extract_archive_section(self):
         """Create UI elements for extracting available archives."""

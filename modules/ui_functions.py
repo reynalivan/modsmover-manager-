@@ -1,5 +1,6 @@
 from tkinter import filedialog, messagebox
 import os
+import threading
 import tkinter as tk  # Import tkinter here
 import modules.folder_management as folder_management  # For folder operations
 from modules.extract_popup_ui import ArchiveExtractorPopup 
@@ -8,6 +9,7 @@ from modules.matching_result_ui import MatchingResultPopup
 from modules.utils.logging_utils import log_message                                    
 import modules.folder_matching as folder_matching  # For matching folders
 from modules.settings_ui import SettingsUI
+from modules.loading_dialog_ui import LoadingDialog
 
 def on_source_folder_selected(self, selected_items, event):
     """Update the rename text box with the selected folder name."""
@@ -15,7 +17,7 @@ def on_source_folder_selected(self, selected_items, event):
         self.list_source_selected_path = []
 
         for item in selected_items:
-             # Get the values of the selected item
+            # Get the values of the selected item
             values = self.source_folder_listbox.item(item, 'values')
             folder_name = values[1]  # Get the archive name only 
             folder_path = next((path for name, path in self.available_source_folders_list if name == folder_name), None)
@@ -30,7 +32,7 @@ def on_source_folder_selected(self, selected_items, event):
                 self.rename_text_box.insert(0, folder_name)  # Insert the selected folder name
                 self.open_source_folder_button.pack(side=tk.LEFT, padx=(10, 0))
                 
-           
+
 
 def browse_source_folder(self):
     """Open a dialog to select a source folder and update the text box."""
@@ -127,7 +129,7 @@ def process_folder_actions(self, folder_selected_path, source_folders_list, dest
     if not folder_selected_path:
         messagebox.showwarning("Warning", "Folder path not selected!")
         return
-      
+
     if not destination_folder:
         messagebox.showwarning("Warning", "Destination folder on STEP 3 not selected!")
         return
@@ -152,40 +154,45 @@ def process_folder_actions(self, folder_selected_path, source_folders_list, dest
         f"#################################"
         f"\n \n"
     )
-
-    get_matching_data = folder_matching.process_match_to_categorized(
-        folder_selected_path,
-        self.available_source_folders_list,
-        destination_folder,
-        self.alias_data,
-        self.similarity_threshold,
-        self.extensions_check,
-        self.skipworld_list,
-        self.ignore_numbers_status
-    )        
+    
+    loading_dialog = LoadingDialog(self.root)
+    matching_results = []
+    
+    def process_matching():
+        nonlocal matching_results
+        matching_results = folder_matching.process_match_to_categorized(
+            folder_selected_path,
+            self.available_source_folders_list, 
+            destination_folder,
+            self.alias_data,
+            self.similarity_threshold,
+            self.extensions_check,
+            self.skipworld_list,
+            self.ignore_numbers_status
+        )
+        loading_dialog.popup.destroy()
+        
+    thread = threading.Thread(target=process_matching)
+    thread.start()
+    
+    self.root.wait_window(loading_dialog.popup)
+        
 
     log_message(
         f"\n \n"
-        f" ////////////////////////////////////////"
-        f" {get_matching_data}"
-        f" ////////////////////////////////////////"
+        f" ////////////////////////////////////////\n"
+        f" {matching_results} \n"
+        f" ////////////////////////////////////////\n"
         f"\n \n"
         )
     
     # Pastikan get_matching_data tidak None sebelum melanjutkan
-    if get_matching_data:
-    
+    if matching_results:
         # Data mapping based on confidence level
-        high_confidence_mapping = [
-            result for result in get_matching_data if result.category == 'HIGH'
-        ]
-        medium_confidence_mapping = [
-            result for result in get_matching_data if result.category == 'MEDIUM'
-        ]
-        low_confidence_mapping = [
-            result for result in get_matching_data if result.category == 'LOW'
-        ]
-
+        high_confidence_mapping = [result for result in matching_results if result.category == 'HIGH']
+        medium_confidence_mapping = [result for result in matching_results if result.category == 'MEDIUM'] 
+        low_confidence_mapping = [result for result in matching_results if result.category == 'LOW']
+        
         # initiate total summary in every step
         total_summary = {}
         
@@ -199,7 +206,23 @@ def process_folder_actions(self, folder_selected_path, source_folders_list, dest
 
             # Handle user actions based on the button clicked
             if high_confirm.user_response:
-                high_summary = folder_management.process_folder(high_confidence_mapping, self.destination_folder)
+                # Filter out skipped items from high_confidence_mapping
+                filtered_high_confidence = [
+                    item for item in high_confidence_mapping 
+                    if os.path.basename(item.source_path) not in high_confirm.skipped_list
+                ]
+                
+                # add log_message for filtered_high_confidence
+                log_message(
+                    f"\n \n"
+                    f"#################################\n"
+                    f"filtered_high_confidence= '{filtered_high_confidence}', \n"
+                    f"#################################"
+                    f"\n \n"
+                )
+                
+                # Process only non-skipped items
+                high_summary = folder_management.process_folder(filtered_high_confidence, self.destination_folder)
                 self.refresh_available_source_folders() 
 
                 # if folder_management.process_folder return none
@@ -224,7 +247,24 @@ def process_folder_actions(self, folder_selected_path, source_folders_list, dest
 
             # Handle user actions based on the button clicked
             if medium_confirm.user_response:
-                medium_summary = folder_management.process_folder(medium_confidence_mapping, self.destination_folder)
+                # Filter out skipped items from high_confidence_mapping
+                filtered_medium_confidence = [
+                    item for item in medium_confidence_mapping 
+                    if os.path.basename(item.source_path) not in medium_confirm.skipped_list
+                ]
+                
+                # add log_message for filtered_high_confidence
+                log_message(
+                    f"\n \n"
+                    f"#################################\n"
+                    f"filtered_medium_confidence= '{filtered_medium_confidence}', \n"
+                    f"#################################"
+                    f"\n \n"
+                )
+                
+                # Process only non-skipped items
+                medium_summary = folder_management.process_folder(filtered_medium_confidence, self.destination_folder)
+
                 self.refresh_available_source_folders() 
 
                 if medium_summary:
@@ -256,7 +296,7 @@ def process_folder_actions(self, folder_selected_path, source_folders_list, dest
             log_message("No data to process.")
             messagebox.showinfo("Info", "No data to process.")
 
- 
+
     else:
         log_message("No valid get_matching_data found. Please check the source and destination folders.")
         messagebox.showerror("Error", "No valid data found. Please check the source and destination folders.")
@@ -329,12 +369,16 @@ def extract_archives(self, archive_paths):
     extractor_popup = ArchiveExtractorPopup(archive_paths, self.root, self)  # Pass the main app instance
     self.root.wait_window(extractor_popup)
     if extractor_popup.user_closed:
-        self.refresh_available_archives()  # Refresh the available archives
+        self.refresAllList(self)
     self.extract_selected_button.pack_forget()  # Hide the button after extraction
 
 def open_settings(self):
     """Open the settings UI."""
     settings_popup = SettingsUI(self.root, self, self.config_utils, self.base_dir, self.config_path, self.dictionary_path, self.readytomoves_dir, firstinitial=False)
-           
+
     if settings_popup.user_saved:
         self.reload_settings()  # Reload the settings after the popup is closed
+
+def refresAllList(self):
+    self.refresh_available_archives()
+    self.refresh_available_source_folders()

@@ -48,6 +48,9 @@ class ArchiveExtractorPopup:
 
         self.status_message = ttk.Label(self.container, text="Waiting for extraction...", wraplength=300, anchor='w')
         self.status_message.pack(padx=(10, 20), pady=(5, 10), fill='x', anchor='w')
+        
+        self.info_message = ttk.Label(self.container, text="Note: Success extraction archives moved to /.extracted folder.", wraplength=300, anchor='w')
+        self.info_message.forget()
 
         # Create a Treeview to display successful extractions
         self.successful_extractions = ttk.Treeview(self.container, columns=("Status", "Archive Name"), show='headings', height=10)
@@ -102,6 +105,7 @@ class ArchiveExtractorPopup:
                     total_failed += 1
                     self.popup.update_idletasks()  # Update the UI
                     self.main_app.refresh_available_archives()
+                    self.main_app.refresh_available_source_folders()
                     continue
                 if extract_process == "ALREADY":
                     self.status_message.config(text=f"SKIPPED: Already extracted '{archive_name}'.")
@@ -109,6 +113,7 @@ class ArchiveExtractorPopup:
                     total_already += 1
                     self.popup.update_idletasks()  # Update the UI
                     self.main_app.refresh_available_archives()
+                    self.main_app.refresh_available_source_folders()
                     continue
                 elif extract_process == "SUCCESS":
                     self.status_message.config(text=f"Successfully extracted '{archive_name}'.")
@@ -116,12 +121,14 @@ class ArchiveExtractorPopup:
                     total_success += 1
                     self.popup.update_idletasks()  # Update the UI
                     self.main_app.refresh_available_archives()
+                    self.main_app.refresh_available_source_folders()
                 else:
                     self.status_message.config(text=f"Failed to extract '{archive_name}'.")
                     self.successful_extractions.insert("", tk.END, values=("Failed", archive_name))
                     total_failed += 1
                     self.popup.update_idletasks()  # Update the UI
                     self.main_app.refresh_available_archives()
+                    self.main_app.refresh_available_source_folders()
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to extract '{archive_name}': {e}")
 
@@ -129,6 +136,7 @@ class ArchiveExtractorPopup:
             # Update label to show completion message
             self.label.config(text="Completed Extraction", foreground="light green")
             self.status_message.config(text=f"Total Success: {total_success}, Already Extracted: {total_already}, Failed: {total_failed}.")
+            self.info_message.pack(padx=(10, 20), pady=(5, 10), fill='x', anchor='w')
             self.cancel_button.pack_forget()  # Hide the cancel button
             self.confirm_button.pack(pady=(10, 5))  # Show the confirm button
             self.popup.update_idletasks()  # Update the UI
@@ -141,7 +149,8 @@ class ArchiveExtractorPopup:
 
     def close_popup(self):
         """Close the popup window."""
-        self.popup.destroy()
         self.main_app.refresh_available_archives()
+        self.main_app.refresh_available_source_folders()
         self.user_closed = True
+        self.popup.destroy()
 

@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import sv_ttk  # Import sv_ttk for theme
 import os  # Import os to handle file paths
 from modules.utils.logging_utils import log_message
@@ -10,6 +10,7 @@ class MatchingPopup:
         self.confidence_data = confidence_data  # Flag to check if extraction is canceled
         self.main_app = main_app  # Reference to the main application
         self.user_response = False
+        self.skipped_list = []
 
         # Make Toplevel as popup
         self.popup = tk.Toplevel(parent)
@@ -62,6 +63,13 @@ class MatchingPopup:
         self.display_matching_results.heading("Confidence", text="Confidence")
         self.display_matching_results.heading("Reason", text="Reason")
         self.display_matching_results.pack(side=tk.LEFT, fill='both', expand=True)
+
+        # Create right-click menu
+        self.right_click_menu = tk.Menu(self.popup, tearoff=0)
+        self.right_click_menu.add_command(label="Skip this file", command=self.skip_selected_item)
+
+        # Bind right-click event
+        self.display_matching_results.bind("<Button-3>", self.show_right_click_menu)
 
         # Create a scrollbar for the Treeview
         self.scrollbar = ttk.Scrollbar(self.treeview_frame, orient="vertical", command=self.display_matching_results.yview)
@@ -120,9 +128,40 @@ class MatchingPopup:
         for index, result in enumerate(matching_results, start=1):
             source_folder_name = os.path.basename(result.source_path)
             # Menambahkan nilai ke tabel
-            self.display_matching_results.insert("", "end", values=(index, source_folder_name, result.destination_name, str(result.confidence), result.reason))
+            self.display_matching_results.insert("", "end", values=(index, source_folder_name, result.destination_name, f"{float(result.confidence):.2f}%", result.reason))
         self.display_matching_results.pack(padx=(10, 20), pady=(5, 10), fill='both', expand=True)
     
+    def show_right_click_menu(self, event):
+        """Show the right-click menu at cursor position"""
+        try:
+            selected_item = self.display_matching_results.identify_row(event.y)
+            if selected_item:
+                self.display_matching_results.selection_set(selected_item)
+                self.right_click_menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            self.right_click_menu.grab_release()
+
+    def skip_selected_item(self):
+        """Remove selected item from list after confirmation"""
+        selected_item = self.display_matching_results.selection()
+        if selected_item:
+            item_values = self.display_matching_results.item(selected_item)['values']
+            source_folder_name = item_values[1]  # Get just the source folder name
+            
+            confirmation = messagebox.askyesno(
+                "Confirm Skip",
+                f"Are you sure you want to skip '{source_folder_name}'?"
+            )
+            
+            if confirmation:
+                # Remove from treeview
+                self.display_matching_results.delete(selected_item)
+                
+                # Add source folder name to skipped list
+                self.skipped_list.append(source_folder_name)
+                log_message(f"Skipped file from matching list: {source_folder_name}")
+
+
     def confirm_action(self):
         """Handle the confirm action."""
         self.user_response = True  # Set response to True when confirmed
@@ -134,7 +173,3 @@ class MatchingPopup:
         self.label.config(text="Cancelling...")
         self.status_message.config(text="Status: Cancelling...")
         self.popup.destroy()  # Close the popup
-
-
-
-      

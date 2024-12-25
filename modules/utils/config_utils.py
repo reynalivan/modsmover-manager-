@@ -156,13 +156,14 @@ class ConfigUtils:
                     "Config saved successfully\n" + \
                     "Config Data: \n" + json.dumps(config_to_save, indent=4) + \
                     "\n==============================\n\n"
-                
+
                 log_message(log_message_content)
 
             return True
         except Exception as e:
             log_message(f"Error saving config: {e}")
             return False
+
     
     def load_dictionary(self):
         """Load mappings and dictionary from the dictionary.json file."""
@@ -196,7 +197,8 @@ class ConfigUtils:
         """Validate the format of the dictionary data."""
         required_keys = ['ALIAS', 'SETTINGS']
         return all(key in dictionary_data for key in required_keys)
- 
+
+
     def set_default_dictionary(self):
         """Set default values for dictionary if the dictionary.json file does not exist."""
         default_dictionary = {
@@ -250,3 +252,4 @@ if __name__ == "__main__":
     log_message(str(config))
     log_message("Loaded Dictionary:")
     log_message(str(dictionary))
+

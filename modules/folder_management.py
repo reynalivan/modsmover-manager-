@@ -55,7 +55,7 @@ def browse_for_source_folder():
 
     return selected_source_folder, selected_source_name
 
-   
+
 def check_and_determine_destination_folder(destination_path, selected_source_name):
     # Mengubah selected_source_name menjadi huruf kecil untuk pencarian case insensitive
     selected_source_name_lower = selected_source_name.lower()
@@ -77,8 +77,6 @@ def check_and_determine_destination_folder(destination_path, selected_source_nam
 
 def process_folder(folders_to_move_mapping, destination_folder):
     """Process folders based on mapping data."""
-    
-    # Pastikan mapping_data adalah list dari objek MatchResult
     source_path_list = [result.source_path for result in folders_to_move_mapping]
     destination_foldername_list = [result.destination_name for result in folders_to_move_mapping]
 
@@ -86,23 +84,23 @@ def process_folder(folders_to_move_mapping, destination_folder):
     renamed_source_path_list = add_prefix_disabled_folders(source_path_list)
 
     # Move folders to their destination
-    summary = {'moved': [], 'failed': [], 'duplicates': []}  # Tambahkan 'duplicates' ke summary
+    summary = {'moved': [], 'failed': [], 'duplicates': []}
 
     for renamed_source_path, destination_foldername in zip(renamed_source_path_list, destination_foldername_list):
-        # Buat path tujuan dengan mempertahankan folder pembungkus
-        full_destination_path = os.path.join(destination_folder, destination_foldername)
-
-        # Pindahkan subfolder ke tujuan
+        destination_path = os.path.join(destination_folder, destination_foldername)
+        base_folder_name = os.path.basename(renamed_source_path)
+        full_destination_path = os.path.join(destination_path, base_folder_name)
         if move_folder(renamed_source_path, full_destination_path):
-            summary['moved'].append(renamed_source_path)
+            summary['moved'].append((renamed_source_path, full_destination_path))
             log_message(f"Successfully moved '{renamed_source_path}' to '{full_destination_path}'.")
         else:
             if os.path.exists(full_destination_path):
-                summary['duplicates'].append(renamed_source_path)  # Tambahkan ke duplicates
+                summary['duplicates'].append((renamed_source_path, full_destination_path))
             else:
-                summary['failed'].append(renamed_source_path)
+                summary['failed'].append((renamed_source_path, full_destination_path))
                 log_message(f"Failed to move '{renamed_source_path}' to '{full_destination_path}'.")
     return summary
+
 
 def add_prefix_disabled_folders(source_path_list):
     """Rename folders and add 'DISABLED' prefix if it doesn't already have it."""
