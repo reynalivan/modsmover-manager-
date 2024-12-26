@@ -104,10 +104,23 @@ class App:
         # Convert and split settings
         self.ignore_numbers_status = self.settings_data.get('ignore_numbers', 'false').strip().lower() == 'true'
         self.skipworld_list = [item.strip() for item in self.settings_data.get('skipworld', '').split(',') if item.strip()]
-
+        
         # Setup source folder
         self.source_folder_root = self.readytomoves_dir
-        self.available_game_folders_list = folder_management.list_available_game_folders(self.source_folder_root) 
+        self.available_game_folders_list = folder_management.list_available_game_folders(self.source_folder_root)
+
+        if self.available_game_folders_list is None:
+            # Create game folders based on destination paths
+            game_folders_to_create = list(self.destination_path_list.keys())
+            
+            # Create each game folder and update the list
+            self.available_game_folders_list = []
+            for game_name in game_folders_to_create:
+                game_path = os.path.join(self.source_folder_root, game_name)
+                folder_management.create_directory(game_path)
+                self.available_game_folders_list.append(game_name)
+        
+        # Always add "Manual" option to the combobox
         self.available_game_folders_list.append("Manual")
 
         # Clear existing UI elements in the container

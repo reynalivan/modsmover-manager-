@@ -13,8 +13,8 @@ class LoadingDialog:
         self.popup.update_idletasks()
         width = 300
         height = 120
-        screen_width = self.popup.winfo_screenwidth()
-        screen_height = self.popup.winfo_screenheight()
+        screen_width = parent.winfo_screenwidth()
+        screen_height = parent.winfo_screenheight()
         x = (screen_width - width) // 2
         y = (screen_height - height) // 2
         self.popup.geometry(f"{width}x{height}+{x}+{y}")

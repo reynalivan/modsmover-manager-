@@ -16,6 +16,11 @@ def list_available_game_folders(readytomoves_folder_path):
         return None
 
     folders = list_folders_in_directory(readytomoves_folder_path)
+    if not folders:
+        # if folder not alvailable, create a new folder readytomoves_folder_path
+        os.makedirs(readytomoves_folder_path)
+        return None
+        
     return folders
 
 
@@ -141,6 +146,12 @@ def add_prefix_disabled_folders(source_path_list):
 
     return renamed_source_path_list
 
+def create_directory(directory_path):
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
+        log_message(f"Created directory: {directory_path}")
+    else:
+        log_message(f"Directory already exists: {directory_path}")
 
 if __name__ == "__main__":
     # This will be set or passed as needed in main.py
